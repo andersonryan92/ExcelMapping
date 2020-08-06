@@ -21,6 +21,7 @@ public class ExcelWriter {
             int columnNumber = 0;
             String maisNumber = entry.getKey();
 
+            // TODO ctrom recommendation: convert switch statement to map or array that you can pull the correct value from
             switch (maisNumber) {
                 case "23800371200":
                     // Baldwin / Cumming

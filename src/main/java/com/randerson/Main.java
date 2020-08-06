@@ -50,15 +50,21 @@ public class Main {
             inputCmepFilePath = jsch.getFile();
         } catch (JSchException | SftpException e) {
             e.printStackTrace();
+            // TODO ctrom recommendation: should you do anything else here after printing the stack trace? Will the program run if an exception is thrown here? If not, you should exit gracefully.
         }
 
+
+        // TODO ctrom recommendation: comments that repeat the code are generally not useful. Comments that explain WHY the code does what it does are more valuable.
+        // Example, change:
         // pausing 2 seconds for file to set in directory
-        Thread.sleep(2000);
+        // to:
+        // sleeping until file fetch complete
+        Thread.sleep(2000); // TODO ctrom recommendation: this looks like a magic number (https://en.wikipedia.org/wiki/Magic_number_(programming)). Can you guarantee that 2000ms is enough? What if it isn't enough for some reason? How will you handle that?
         // setting the path to the excel file
         String outputExcelPath = System.getProperty("user.dir") + "/src/main/resources/MeterReadDataSampleSpreadsheet.xlsx";
-        // creating excelwriter object
-        ExcelWriter writer = new ExcelWriter();
-        // creating csvParser object. passing csv file path to the constructor
+        // creating excelwriter object // TODO ctrom recommendation: see note above about comments that repeat the code
+        ExcelWriter writer = new ExcelWriter(); // TODO ctrom recommendation: this variable isn't used here, so its purpose is unclear. Recommend moving declaration/instantiation closer to initial usage.
+        // creating csvParser object. passing csv file path to the constructor // TODO ctrom recommendation: see note above about comments that repeat the code
         CsvParser csvParser = new CsvParser(inputCmepFilePath);
         // getting hashmap of values returned from csvParser method
         HashMap<String, ArrayList<String>> map = csvParser.getMeterIdAndPulseReadings();
