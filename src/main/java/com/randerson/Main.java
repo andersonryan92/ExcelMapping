@@ -3,6 +3,7 @@ package com.randerson;
 import com.google.api.services.pubsub.model.PubsubMessage;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
+import com.microsoft.aad.msal4j.*;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -13,22 +14,57 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 
 public class Main implements BackgroundFunction<PubsubMessage> {
-//public class Main {
+
+    private final static String CLIENT_ID = "cad6417f-1c8e-41f7-874d-9bb940692738";
+    private final static String AUTHORITY = "https://login.microsoftonline.com/9e88b7b8-ccb2-4b8b-bb8a-c0e888d7c67b/";
+    private final static String CLIENT_SECRET = "DU-1-7wMlZNmzgu_-7U-4HjVHi3wBw-wGY";
+    private final static Set<String> SCOPE = Collections.singleton("https://graph.microsoft.com/.default");
+    // objectID = a445f4e1-895c-4dd1-9f46-9f2f0508b418
 
     public static void main(String[] args) {
-        Main main = new Main();
+        IClientCredential credential = ClientCredentialFactory.createFromSecret(CLIENT_SECRET);
         try {
-            main.updateXlsxFile(main.getMeterIdAndPulseReadings(args));
+            ConfidentialClientApplication cca =
+                    ConfidentialClientApplication
+                            .builder(CLIENT_ID, credential)
+                            .authority(AUTHORITY)
+                            .build();
+            IAuthenticationResult result;
+            try {
+                SilentParameters silentParameters =
+                        SilentParameters
+                                .builder(SCOPE)
+                                .build();
+                // try to acquire token silently. This call will fail since the token cache does not
+                // have a token for the application you are requesting an access token for
+                result = cca.acquireTokenSilently(silentParameters).join();
+            } catch (Exception e) {
+                if (e.getCause() instanceof MsalException) {
+                    ClientCredentialParameters parameters =
+                            ClientCredentialParameters
+                                    .builder(SCOPE)
+                                    .build();
+                    // Try to acquire a token. If successful, you should see
+                    // the token information printed out to console
+                    result = cca.acquireToken(parameters).join();
+                } else {
+                    // Handle other exceptions accordingly
+                    throw e;
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            //TODO Handle exceptions
         }
+//        Main main = new Main();
+//        try {
+//            main.updateXlsxFile(main.getMeterIdAndPulseReadings(args));
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            //TODO Handle exceptions
+//        }
     }
 
     @Override
