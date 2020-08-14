@@ -18,53 +18,14 @@ import java.util.*;
 
 public class Main implements BackgroundFunction<PubsubMessage> {
 
-    private final static String CLIENT_ID = "cad6417f-1c8e-41f7-874d-9bb940692738";
-    private final static String AUTHORITY = "https://login.microsoftonline.com/9e88b7b8-ccb2-4b8b-bb8a-c0e888d7c67b/";
-    private final static String CLIENT_SECRET = "DU-1-7wMlZNmzgu_-7U-4HjVHi3wBw-wGY";
-    private final static Set<String> SCOPE = Collections.singleton("https://graph.microsoft.com/.default");
-    // objectID = a445f4e1-895c-4dd1-9f46-9f2f0508b418
-
     public static void main(String[] args) {
-        IClientCredential credential = ClientCredentialFactory.createFromSecret(CLIENT_SECRET);
+        Main main = new Main();
         try {
-            ConfidentialClientApplication cca =
-                    ConfidentialClientApplication
-                            .builder(CLIENT_ID, credential)
-                            .authority(AUTHORITY)
-                            .build();
-            IAuthenticationResult result;
-            try {
-                SilentParameters silentParameters =
-                        SilentParameters
-                                .builder(SCOPE)
-                                .build();
-                // try to acquire token silently. This call will fail since the token cache does not
-                // have a token for the application you are requesting an access token for
-                result = cca.acquireTokenSilently(silentParameters).join();
-            } catch (Exception e) {
-                if (e.getCause() instanceof MsalException) {
-                    ClientCredentialParameters parameters =
-                            ClientCredentialParameters
-                                    .builder(SCOPE)
-                                    .build();
-                    // Try to acquire a token. If successful, you should see
-                    // the token information printed out to console
-                    result = cca.acquireToken(parameters).join();
-                } else {
-                    // Handle other exceptions accordingly
-                    throw e;
-                }
-            }
+            main.updateXlsxFile(main.getMeterIdAndPulseReadings());
         } catch (Exception e) {
             e.printStackTrace();
+            //TODO Handle exceptions
         }
-//        Main main = new Main();
-//        try {
-//            main.updateXlsxFile(main.getMeterIdAndPulseReadings(args));
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            //TODO Handle exceptions
-//        }
     }
 
     @Override
@@ -74,7 +35,7 @@ public class Main implements BackgroundFunction<PubsubMessage> {
                     Base64.getDecoder().decode(message.getData().getBytes(StandardCharsets.UTF_8)),
                     StandardCharsets.UTF_8);
             try {
-//                updateXlsxFile(getMeterIdAndPulseReadings());
+                updateXlsxFile(getMeterIdAndPulseReadings());
             } catch (Exception e) {
                 e.printStackTrace();
                 //TODO Handle exceptions
@@ -82,16 +43,16 @@ public class Main implements BackgroundFunction<PubsubMessage> {
         }
     }
 
-    private HashMap<String, ArrayList<String>> getMeterIdAndPulseReadings(String[] args) throws InterruptedException {
+    private HashMap<String, ArrayList<String>> getMeterIdAndPulseReadings() throws InterruptedException {
         System.out.println("Getting Meter ID and Pulse Readings");
         // California Meter Exchange Protocol
         String inputCmepFilePath = "";
         try {
             // fetch meter reading CSV file from FTP server
-            String remoteHost = "xtr.southernco.com";
-            String username = "Fireside_NG_Project";
-            String password = args[0];
-            inputCmepFilePath = new SftpFetcher(remoteHost, username, password).getMostRecentFile();
+            String southencoRemoteHost = SecretClient.accessSecretVersion("southernco-remote-host");
+            String southerncoUsername = SecretClient.accessSecretVersion("southernco-username");
+            String southerncoPassword = SecretClient.accessSecretVersion("southernco-password");
+            inputCmepFilePath = new SftpFetcher(southencoRemoteHost, southerncoUsername, southerncoPassword).getMostRecentFile();
         } catch (Exception e) {
             e.printStackTrace();
             //TODO handle exception
@@ -109,7 +70,7 @@ public class Main implements BackgroundFunction<PubsubMessage> {
             System.out.println("hour is midnight. exiting.....");
             System.exit(0); //TODO handle this case
         }
-        String outputExcelPath = System.getProperty("user.dir") + "/src/main/resources/MeterReadDataSampleSpreadsheet.xlsx";
+        String outputExcelPath = System.getProperty("user.dir") + "/src/main/resources/MeterReadSpreadsheet.xlsx";
         XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(outputExcelPath));
         // Get sheet named after yesterday's date
         XSSFSheet yesterdaySheet = workbook.getSheet(isoFormat.format(currentTimestamp.minusDays(1)));
@@ -126,6 +87,11 @@ public class Main implements BackgroundFunction<PubsubMessage> {
         ExcelWriter writer = new ExcelWriter();
         writer.writeArrayBasedOnMeter(meterIdAndPulseReadings, yesterdaySheet, todaySheet);
         workbook.write(new FileOutputStream(outputExcelPath));
+        String egnyteRemoteHost = SecretClient.accessSecretVersion("egnyte-remote-host");
+        String egnyteUsername = SecretClient.accessSecretVersion("egnyte-username");
+        String egnytePassword = SecretClient.accessSecretVersion("egnyte-password");
+        EgnyteClient egnyteClient = new EgnyteClient(egnyteRemoteHost, egnyteUsername, egnytePassword);
+        egnyteClient.uploadFile(outputExcelPath);
         File resourcesDirectory = new File(System.getProperty("user.dir") + "/src/main/resources");
         File[] files = resourcesDirectory.listFiles();
         if (files != null) {
