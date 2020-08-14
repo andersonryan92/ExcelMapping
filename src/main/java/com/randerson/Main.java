@@ -3,8 +3,6 @@ package com.randerson;
 import com.google.api.services.pubsub.model.PubsubMessage;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
-import com.microsoft.aad.msal4j.*;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.File;
@@ -70,8 +68,11 @@ public class Main implements BackgroundFunction<PubsubMessage> {
             System.out.println("hour is midnight. exiting.....");
             System.exit(0); //TODO handle this case
         }
-        String outputExcelPath = System.getProperty("user.dir") + "/src/main/resources/MeterReadSpreadsheet.xlsx";
-        XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(outputExcelPath));
+        String egnyteRemoteHost = SecretClient.accessSecretVersion("egnyte-remote-host");
+        String egnyteUsername = SecretClient.accessSecretVersion("egnyte-username");
+        String egnytePassword = SecretClient.accessSecretVersion("egnyte-password");
+        EgnyteClient egnyteClient = new EgnyteClient(egnyteRemoteHost, egnyteUsername, egnytePassword);
+        XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(egnyteClient.downloadFile()));
         // Get sheet named after yesterday's date
         XSSFSheet yesterdaySheet = workbook.getSheet(isoFormat.format(currentTimestamp.minusDays(1)));
         XSSFSheet todaySheet = workbook.getSheet(isoFormat.format(currentTimestamp));
@@ -86,24 +87,21 @@ public class Main implements BackgroundFunction<PubsubMessage> {
 
         ExcelWriter writer = new ExcelWriter();
         writer.writeArrayBasedOnMeter(meterIdAndPulseReadings, yesterdaySheet, todaySheet);
+        String outputExcelPath = System.getProperty("java.io.tmpdir") + "/MeterReadSpreadsheet.xlsx";
         workbook.write(new FileOutputStream(outputExcelPath));
-        String egnyteRemoteHost = SecretClient.accessSecretVersion("egnyte-remote-host");
-        String egnyteUsername = SecretClient.accessSecretVersion("egnyte-username");
-        String egnytePassword = SecretClient.accessSecretVersion("egnyte-password");
-        EgnyteClient egnyteClient = new EgnyteClient(egnyteRemoteHost, egnyteUsername, egnytePassword);
         egnyteClient.uploadFile(outputExcelPath);
-        File resourcesDirectory = new File(System.getProperty("user.dir") + "/src/main/resources");
-        File[] files = resourcesDirectory.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.getName().contains("GPC") && f.isFile() && f.exists()) {
-                    if (!f.delete()) {
-                        throw new Exception("File did not delete properly."); //TODO improve exception handling
-                    }
-                }
-            }
-        }
-        System.out.println("Finished. Done.");
+//        File resourcesDirectory = new File(System.getProperty("user.dir") + "/src/main/resources");
+//        File[] files = resourcesDirectory.listFiles();
+//        if (files != null) {
+//            for (File f : files) {
+//                if (f.getName().contains("GPC") && f.isFile() && f.exists()) {
+//                    if (!f.delete()) {
+//                        throw new Exception("File did not delete properly."); //TODO improve exception handling
+//                    }
+//                }
+//            }
+//        }
+        System.out.println("Finished.");
     }
 
 }

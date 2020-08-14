@@ -1,8 +1,6 @@
 package com.randerson;
 
 import com.google.cloud.secretmanager.v1.*;
-import com.google.protobuf.ByteString;
-
 import java.io.IOException;
 
 public class SecretClient {
@@ -31,7 +29,6 @@ public class SecretClient {
             // WARNING: Do not print the secret in a production environment - this
             // snippet is showing how to access the secret material.
             String payload = response.getPayload().getData().toStringUtf8();
-            System.out.printf("Plaintext: %s\n", payload);
             return payload;
         }
     }

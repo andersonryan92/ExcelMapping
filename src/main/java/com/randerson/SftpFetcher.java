@@ -23,7 +23,7 @@ public class SftpFetcher {
         JSch jsch = new JSch();
 
         // Get path to local directory and store in variable
-        String localDir = System.getProperty("user.dir") + "/src/main/resources/";
+        String localDir = System.getProperty("java.io.tmpdir") + "/";
         System.out.printf("localDir set to %s%n", localDir);
         Session jschSession = null;
         ChannelSftp sftpChannel = null;
