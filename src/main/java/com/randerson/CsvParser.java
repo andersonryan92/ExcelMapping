@@ -19,21 +19,20 @@ public class CsvParser {
         String line = "";
 
         try {
-
             BufferedReader br = new BufferedReader(new FileReader(path));
             int index = 0;
             while ((line = br.readLine()) != null) {
                 ArrayList<String> pulseReadings = new ArrayList<String>();
-                // if the index variable is odd, go into if statement
+                // We only care to read every other line of the source CSV
                 if (index % 2 != 0) {
-                    // split the line on commas
                     String[] values = line.split(",");
+                    // For every third column in the CSV starting at column 16
                     for (int i = 16; i < values.length; i += 3) {
-                        // add the string at index 16 of the values string array to the pulseReadings arraylist
+                        // add the string at index i to the pulseReadings arrayList
                         pulseReadings.add(values[i]);
                     }
-                    // values[5] is the MAIS number.
-                    map.put(values[5], pulseReadings);
+                    final int MAIS_COLUMN_INDEX = 5; // The 5th column in the CSV should be the MAIS ID
+                    map.put(values[MAIS_COLUMN_INDEX], pulseReadings);
                 }
                 index++;
             }

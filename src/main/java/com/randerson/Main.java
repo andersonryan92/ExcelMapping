@@ -1,88 +1,107 @@
 package com.randerson;
 
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
+import com.google.api.services.pubsub.model.PubsubMessage;
+import com.google.cloud.functions.BackgroundFunction;
+import com.google.cloud.functions.Context;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import java.io.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class Main {
+public class Main implements BackgroundFunction<PubsubMessage> {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-
-        // create a date format object
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        // set the timezone as eastern time
-        dateFormat.setTimeZone(TimeZone.getTimeZone("America/New_York"));
-        // create new date object
-        Date date = new Date();
-        // get todays date
-        String[] todaysDateArray = dateFormat.format(date).split(" ");
-        // get a calendar instance, which defaults to "now"
-        Calendar calendar = Calendar.getInstance();
-        // subtract one day to the date/calendar to get yesterday
-        calendar.add(Calendar.DAY_OF_YEAR, -1);
-        // now get "yesterday"
-        Date yesterday = calendar.getTime();
-        // get yesterday's date
-        String[] yesterdayDateArray = dateFormat.format(yesterday).split(" ");
-
-
-        if (todaysDateArray[1].split(":")[0].equals("00")){
-            System.out.println("hour is midnight. exiting.....");
-            System.exit(0);
-        }
-
-
-        // creating jsch object. This is the class responsible for
-        // fetching the CSV file from the SFTP server
-        Jsch jsch = new Jsch();
-
-        // Initializing input string variable
-        String inputCmepFilePath = "";
-
+    public static void main(String[] args) {
+        Main main = new Main();
         try {
-            // getting file from SFTP server by calling getFile method
-            // on the jsch object
-            inputCmepFilePath = jsch.getFile();
-        } catch (JSchException | SftpException e) {
+            main.updateXlsxFile(main.getMeterIdAndPulseReadings());
+        } catch (Exception e) {
             e.printStackTrace();
+            //TODO Handle exceptions
         }
+    }
 
-        // pausing 2 seconds for file to set in directory
-        Thread.sleep(2000);
-        // setting the path to the excel file
-        String outputExcelPath = System.getProperty("user.dir") + "/src/main/resources/MeterReadDataSampleSpreadsheet.xlsx";
-        // creating excelwriter object
-        ExcelWriter writer = new ExcelWriter();
-        // creating csvParser object. passing csv file path to the constructor
-        CsvParser csvParser = new CsvParser(inputCmepFilePath);
-        // getting hashmap of values returned from csvParser method
-        HashMap<String, ArrayList<String>> map = csvParser.getMeterIdAndPulseReadings();
-
-
-
-        XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(outputExcelPath));
-        XSSFSheet yesterdaySheet = workbook.getSheet(yesterdayDateArray[0].replace('/','-'));
-
-        XSSFSheet todaySheet = workbook.getSheet(todaysDateArray[0].replace('/','-'));
-        if (todaySheet == null){
-            todaySheet = workbook.cloneSheet(0, todaysDateArray[0].replace('/','-'));
-        }
-
-
-        writer.writeArrayBasedOnMeter(map,yesterdaySheet, todaySheet);
-        workbook.write(new FileOutputStream(outputExcelPath));
-        File resourcesDirectory = new File(System.getProperty("user.dir") + "/src/main/resources");
-        for (File f : resourcesDirectory.listFiles()) {
-            if (f.getName().contains("GPC") && f.isFile() && f.exists()){
-                f.delete();
+    @Override
+    public void accept(PubsubMessage message, Context context) {
+        if (message != null && message.getData() != null) {
+            new String(
+                    Base64.getDecoder().decode(message.getData().getBytes(StandardCharsets.UTF_8)),
+                    StandardCharsets.UTF_8);
+            try {
+                updateXlsxFile(getMeterIdAndPulseReadings());
+            } catch (Exception e) {
+                e.printStackTrace();
+                //TODO Handle exceptions
             }
         }
-        System.out.println("Finished. Done.");
-        System.exit(0);
     }
+
+    private HashMap<String, ArrayList<String>> getMeterIdAndPulseReadings() throws InterruptedException {
+        System.out.println("Getting Meter ID and Pulse Readings");
+        // California Meter Exchange Protocol
+        String inputCmepFilePath = "";
+        try {
+            // fetch meter reading CSV file from FTP server
+            String southencoRemoteHost = SecretClient.accessSecretVersion("southernco-remote-host");
+            String southerncoUsername = SecretClient.accessSecretVersion("southernco-username");
+            String southerncoPassword = SecretClient.accessSecretVersion("southernco-password");
+            inputCmepFilePath = new SftpFetcher(southencoRemoteHost, southerncoUsername, southerncoPassword).getMostRecentFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+            //TODO handle exception
+        }
+        CsvParser csvParser = new CsvParser(inputCmepFilePath);
+        return csvParser.getMeterIdAndPulseReadings();
+    }
+
+    private void updateXlsxFile(HashMap<String, ArrayList<String>> meterIdAndPulseReadings) throws Exception { //TODO handle exceptions
+        System.out.println("Updating XLSX File");
+        ZonedDateTime currentTimestamp = ZonedDateTime.now(ZoneId.of("America/New_York"));
+        DateTimeFormatter isoFormat = DateTimeFormatter.ISO_LOCAL_DATE;
+
+        if (currentTimestamp.getHour()==0) { //TODO ask Ryan if this is needed. Is it harmful to run the application at midnight, or just not useful?
+            System.out.println("hour is midnight. exiting.....");
+            System.exit(0); //TODO handle this case
+        }
+        String egnyteRemoteHost = SecretClient.accessSecretVersion("egnyte-remote-host");
+        String egnyteUsername = SecretClient.accessSecretVersion("egnyte-username");
+        String egnytePassword = SecretClient.accessSecretVersion("egnyte-password");
+        EgnyteClient egnyteClient = new EgnyteClient(egnyteRemoteHost, egnyteUsername, egnytePassword);
+        XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(egnyteClient.downloadFile()));
+        // Get sheet named after yesterday's date
+        XSSFSheet yesterdaySheet = workbook.getSheet(isoFormat.format(currentTimestamp.minusDays(1)));
+        XSSFSheet todaySheet = workbook.getSheet(isoFormat.format(currentTimestamp));
+        // If we can't find a sheet with yesterday's date, use the last sheet in the workbook
+        if (yesterdaySheet == null) {
+            yesterdaySheet = workbook.getSheetAt(workbook.getNumberOfSheets()-1);
+        }
+        if (todaySheet == null) {
+            final int FIRST_SHEET = 0;
+            todaySheet = workbook.cloneSheet(FIRST_SHEET, isoFormat.format(currentTimestamp));
+        }
+
+        ExcelWriter writer = new ExcelWriter();
+        writer.writeArrayBasedOnMeter(meterIdAndPulseReadings, yesterdaySheet, todaySheet);
+        String outputExcelPath = System.getProperty("java.io.tmpdir") + "/MeterReadSpreadsheet.xlsx";
+        workbook.write(new FileOutputStream(outputExcelPath));
+        egnyteClient.uploadFile(outputExcelPath);
+//        File resourcesDirectory = new File(System.getProperty("user.dir") + "/src/main/resources");
+//        File[] files = resourcesDirectory.listFiles();
+//        if (files != null) {
+//            for (File f : files) {
+//                if (f.getName().contains("GPC") && f.isFile() && f.exists()) {
+//                    if (!f.delete()) {
+//                        throw new Exception("File did not delete properly."); //TODO improve exception handling
+//                    }
+//                }
+//            }
+//        }
+        System.out.println("Finished.");
+    }
+
 }
