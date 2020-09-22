@@ -82,12 +82,15 @@ public class Main implements BackgroundFunction<PubsubMessage> {
         }
         if (todaySheet == null) {
             final int FIRST_SHEET = 0;
+            final int SECOND_SHEET = 1;
             todaySheet = workbook.cloneSheet(FIRST_SHEET, isoFormat.format(currentTimestamp));
+            workbook.removeSheetAt(SECOND_SHEET);
         }
 
         ExcelWriter writer = new ExcelWriter();
         writer.writeArrayBasedOnMeter(meterIdAndPulseReadings, yesterdaySheet, todaySheet);
         String outputExcelPath = System.getProperty("java.io.tmpdir") + "/MeterReadSpreadsheet.xlsx";
+        System.out.println("the output excel path is : " + outputExcelPath);
         workbook.write(new FileOutputStream(outputExcelPath));
         egnyteClient.uploadFile(outputExcelPath);
 //        File resourcesDirectory = new File(System.getProperty("user.dir") + "/src/main/resources");

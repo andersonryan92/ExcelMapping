@@ -6,6 +6,8 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
 import java.io.ByteArrayInputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.Vector;
 
 public class EgnyteClient {
@@ -25,6 +27,16 @@ public class EgnyteClient {
         // Get path to local directory and store in variable
         String localDir = System.getProperty("java.io.tmpdir") + "/";
         System.out.printf("localDir set to %s%n", localDir);
+        System.out.println();
+        System.out.println("user.dir is: " + System.getProperty("user.dir"));
+        System.out.println("user.home is: " + System.getProperty("user.home"));
+        System.out.println("os.name is: " + System.getProperty("os.name"));
+        System.out.println("os.version is: " + System.getProperty("os.version"));
+        System.out.println("user.name is: " + System.getProperty("user.name"));
+
+
+        Path path = FileSystems.getDefault().getPath(".").toAbsolutePath();
+        System.out.println("path is: " + path.toString());
         Session jschSession = null;
         ChannelSftp sftpChannel = null;
         try {

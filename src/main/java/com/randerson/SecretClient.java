@@ -6,7 +6,7 @@ import java.io.IOException;
 public class SecretClient {
 
     public static String accessSecretVersion(String secretId) throws IOException {
-        String projectId = "upwork-ryan-anderson";
+        String projectId = "fireside-project";
         String versionId = "latest";
         return accessSecretVersion(projectId, secretId, versionId);
     }

@@ -2,6 +2,7 @@ package com.randerson;
 
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 
+import java.text.DecimalFormat;
 import java.util.*;
 
 public class ExcelWriter {
@@ -70,7 +71,11 @@ public class ExcelWriter {
             for (int rowNumber = 29; rowNumber < goUpto; rowNumber++) {
                 //total += Integer.parseInt(entry.getValue().get(j));
                 String maisNumber = entry.getKey();
-                sheet1.getRow(rowNumber).getCell(this.maisColumns.get(maisNumber).getColumnNumber()).setCellValue(entry.getValue().get(j++));
+                int number = entry.getValue().get(j++);
+                // the MCF factor number is 1.038
+                double mcfNumber = number * 1.038;
+                double roundedMcfNumber = Math.round(mcfNumber * 10) / 10.0;
+                sheet1.getRow(rowNumber).getCell(this.maisColumns.get(maisNumber).getColumnNumber()).setCellValue(roundedMcfNumber);
                 if (rowNumber == 38) {
                     rowNumber = 14;
                     goUpto = (numberOfPulseReadings - 10) + 15;
@@ -84,13 +89,21 @@ public class ExcelWriter {
 
     public HashMap<String, ArrayList<Integer>> addValuesFromArray(HashMap<String, ArrayList<String>> map) {
 
+        System.out.println("the hashmap values from the addValuesFromArray function in excelwriter class");
+
+        map.entrySet().forEach(entry->{
+            System.out.println(entry.getKey() + " " + entry.getValue());
+        });
+
         HashMap<String, ArrayList<Integer>> theNewMap = new HashMap<>();
         ArrayList<String> placeHolderA;
         ArrayList<String> placeHolderB;
-        ArrayList<Integer> arrToReturn = new ArrayList<>();
+        // ArrayList<Integer> arrToReturn = new ArrayList<>();
         HashSet<String> removedKeys = new HashSet<>();
 
         for (Map.Entry<String, ArrayList<String>> entry : map.entrySet()) {
+
+            ArrayList<Integer> arrToReturn = new ArrayList<>();
 
             // if key is not in hashmap, then proceed
             if (!removedKeys.contains(entry.getKey())) {
@@ -113,6 +126,9 @@ public class ExcelWriter {
                         Integer versionB = i < placeHolderB.size() ? Integer.parseInt(placeHolderB.get(i)) : 0;
                         int meterReadSum = versionA + versionB;
                         arrToReturn.add(meterReadSum);
+                        System.out.println("the current entry is: ");
+                        System.out.println(entry.getKey());
+                        System.out.println(Arrays.asList(arrToReturn));
                     }
                     int keySize = entry.getKey().length();
 
@@ -133,6 +149,10 @@ public class ExcelWriter {
                 }
             }
         }
+        System.out.println("the hashmap values returned from the addValuesFromArray method");
+        theNewMap.entrySet().forEach(entry->{
+            System.out.println(entry.getKey() + " " + entry.getValue());
+        });
         return theNewMap;
     }
 }
