@@ -102,7 +102,7 @@ public class EgnyteClient {
                 FTP_DIRECTORY = "/Shared/IT Meter Data/Archive/";
                 outputPath = System.getProperty("java.io.tmpdir") + "/" + monthYear + ".xlsx";
                 try {
-                    sftpChannel.get(FTP_DIRECTORY+monthYear, outputPath);
+                    sftpChannel.get(FTP_DIRECTORY+monthYear+".xlsx", outputPath);
                 } catch (SftpException se) {
                     if (se.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
                         sftpChannel.get(FTP_DIRECTORY+"Template.xlsx", System.getProperty("java.io.tmpdir") + "/Template.xlsx");
