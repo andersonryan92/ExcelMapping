@@ -55,7 +55,7 @@ public class ExcelWriter {
 
         HashMap<String, ArrayList<Integer>> updatedMap;
         updatedMap = addValuesFromArray(map);
-        XSSFSheet sheetOneRef = sheet1;
+        XSSFSheet workingSheet = sheet1;
 
         for (Map.Entry<String, ArrayList<Integer>> entry : updatedMap.entrySet()) {
             // the number 29 represents the 30th row in the excel file- 1:00AM reading
@@ -69,21 +69,24 @@ public class ExcelWriter {
             int j = 0;
             //int total = 0;
             for (int rowNumber = 29; rowNumber < goUpto; rowNumber++) {
-                //total += Integer.parseInt(entry.getValue().get(j));
-                String maisNumber = entry.getKey();
-                int number = entry.getValue().get(j++);
-                // the MCF factor number is 1.038
-                double mcfNumber = number * 1.038;
-                double roundedMcfNumber = Math.round(mcfNumber * 10) / 10.0;
-                sheet1.getRow(rowNumber).getCell(this.maisColumns.get(maisNumber).getColumnNumber()).setCellValue(roundedMcfNumber);
+                if (workingSheet != null) {
+                    String maisNumber = entry.getKey();
+                    int number = entry.getValue().get(j);
+                    try {
+                        workingSheet.getRow(rowNumber).getCell(this.maisColumns.get(maisNumber).getColumnNumber()).setCellFormula("B2*" + number);
+                    } catch (NullPointerException npe) {
+                        System.err.println("Failed to retrieve a cell for MAIS " + maisNumber);
+                        throw npe;
+                    }
+                }
+                j++;
                 if (rowNumber == 38) {
                     rowNumber = 14;
                     goUpto = (numberOfPulseReadings - 10) + 15;
-                    sheet1 = sheet2;
+                    workingSheet = sheet2;
                 }
             }
-            sheet1 = sheetOneRef;
-            //sheet1.getRow(39).getCell(columnNumber).setCellValue(total);
+            workingSheet = sheet1;
         }
     }
 
