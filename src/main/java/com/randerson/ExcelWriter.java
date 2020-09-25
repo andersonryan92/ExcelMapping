@@ -40,7 +40,7 @@ public class ExcelWriter {
             new AbstractMap.SimpleEntry<>("23233240015", new MaisAssociation("CWM / Tyrone", 12)),
             new AbstractMap.SimpleEntry<>("23730137511", new MaisAssociation("ERS / Athens", 13)),
             new AbstractMap.SimpleEntry<>("23800378200", new MaisAssociation("ERS / Friendship", 14)),
-            new AbstractMap.SimpleEntry<>("23127100027", new MaisAssociation("ERS / Lithonia", 15)),
+            new AbstractMap.SimpleEntry<>("231271000027", new MaisAssociation("ERS / Lithonia", 15)),
             new AbstractMap.SimpleEntry<>("23800420400", new MaisAssociation("ERS / Lithonia #2", 16)),
             new AbstractMap.SimpleEntry<>("23760040015", new MaisAssociation("ERS / Norcross", 17)),
             new AbstractMap.SimpleEntry<>("23233192501", new MaisAssociation("ERS / StockBridge", 18)),
