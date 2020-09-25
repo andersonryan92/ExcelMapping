@@ -130,18 +130,3 @@ public class EgnyteClient {
         }
     }
 }
-
-
-
-// 1. Download CSV data
-// 2. Transform CSV data
-// 3. Download Master spread sheet
-// 3.1. Download archive spread sheet
-// 4. Write data to Master spread sheet
-// 4.1. Write data to archive spread sheet
-// 5. Upload Master spread sheet
-// 5.1. Upload archive spreadsheet
-
-//      /Shared/IT Meter Data/MeterReadSpreadsheet.xlsx
-//      /Shared/IT Meter Data/Archive/2020-01.xlsx
-//      /Shared/IT Meter Data/Archive/Template.xlsx
