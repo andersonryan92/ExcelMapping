@@ -4,6 +4,7 @@ package com.randerson;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 
 import java.io.ByteArrayInputStream;
 import java.nio.file.FileSystems;
@@ -21,7 +22,7 @@ public class EgnyteClient {
         this.password = password;
     }
 
-    public void uploadFile(String filePath) throws Exception {
+    public void uploadFile(String filePath, boolean archive) throws Exception {
         JSch jsch = new JSch();
 
         // Get path to local directory and store in variable
@@ -48,7 +49,12 @@ public class EgnyteClient {
             sftpChannel = (ChannelSftp) jschSession.openChannel("sftp");
             sftpChannel.connect();
 
-            final String FTP_DIRECTORY = "/Shared/IT Meter Data";
+            String FTP_DIRECTORY;
+            if (archive) {
+                FTP_DIRECTORY = "/Shared/IT Meter Data/Archive";
+            } else {
+                FTP_DIRECTORY = "/Shared/IT Meter Data";
+            }
             sftpChannel.put(filePath, FTP_DIRECTORY);
 //            Vector<ChannelSftp.LsEntry> vector = sftpChannel.ls(FTP_DIRECTORY);
 //            for (ChannelSftp.LsEntry entry : vector) {
@@ -69,7 +75,7 @@ public class EgnyteClient {
         }
     }
 
-    public String downloadFile() throws Exception {
+    public String downloadFile(String monthYear) throws Exception {
         JSch jsch = new JSch();
 
         // Get path to local directory and store in variable
@@ -86,13 +92,29 @@ public class EgnyteClient {
             sftpChannel = (ChannelSftp) jschSession.openChannel("sftp");
             sftpChannel.connect();
 
-            final String FTP_DIRECTORY = "/Shared/IT Meter Data/";
-//            Vector<ChannelSftp.LsEntry> vector = sftpChannel.ls(FTP_DIRECTORY);
-//            for (ChannelSftp.LsEntry entry : vector) {
-//                System.out.println(entry);
-//            }
-            String outputPath = System.getProperty("java.io.tmpdir") + "/MeterReadSpreadsheet.xlsx";
-            sftpChannel.get(FTP_DIRECTORY+"MeterReadSpreadsheet.xlsx", outputPath);
+            final String FTP_DIRECTORY;
+            String outputPath;
+            if (monthYear == null) { // If a month and year weren't specified, get the master (current) file
+                FTP_DIRECTORY = "/Shared/IT Meter Data/";
+                outputPath = System.getProperty("java.io.tmpdir") + "/MeterReadSpreadsheet.xlsx";
+                sftpChannel.get(FTP_DIRECTORY+"MeterReadSpreadsheet.xlsx", outputPath);
+            } else { // If a month and year were specified, fetch the archive file accordingly
+                FTP_DIRECTORY = "/Shared/IT Meter Data/Archive/";
+                outputPath = System.getProperty("java.io.tmpdir") + "/" + monthYear + ".xlsx";
+                try {
+                    sftpChannel.get(FTP_DIRECTORY+monthYear, outputPath);
+                } catch (SftpException se) {
+                    if (se.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                        sftpChannel.get(FTP_DIRECTORY+"Template.xlsx", System.getProperty("java.io.tmpdir") + "/Template.xlsx");
+                        // File does not exist on the server
+                        return null;
+                    } else {
+                        System.out.println("Error occurred");
+                        se.printStackTrace();
+                        throw se;
+                    }
+                }
+            }
             return outputPath;
         } catch (Exception e){
             e.printStackTrace(); //TODO handle exception
@@ -108,3 +130,18 @@ public class EgnyteClient {
         }
     }
 }
+
+
+
+// 1. Download CSV data
+// 2. Transform CSV data
+// 3. Download Master spread sheet
+// 3.1. Download archive spread sheet
+// 4. Write data to Master spread sheet
+// 4.1. Write data to archive spread sheet
+// 5. Upload Master spread sheet
+// 5.1. Upload archive spreadsheet
+
+//      /Shared/IT Meter Data/MeterReadSpreadsheet.xlsx
+//      /Shared/IT Meter Data/Archive/2020-01.xlsx
+//      /Shared/IT Meter Data/Archive/Template.xlsx
