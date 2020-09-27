@@ -99,9 +99,9 @@ public class ExcelWriter {
         });
 
         HashMap<String, ArrayList<Integer>> theNewMap = new HashMap<>();
-        ArrayList<String> placeHolderA;
-        ArrayList<String> placeHolderB;
-        // ArrayList<Integer> arrToReturn = new ArrayList<>();
+        ArrayList<String> placeHolderOne;
+        ArrayList<String> placeHolderTwo;
+        ArrayList<String> placeHolderThree;
         HashSet<String> removedKeys = new HashSet<>();
 
         for (Map.Entry<String, ArrayList<String>> entry : map.entrySet()) {
@@ -111,23 +111,50 @@ public class ExcelWriter {
             // if key is not in hashmap, then proceed
             if (!removedKeys.contains(entry.getKey())) {
 
-                // if entry is an A or B entry
-                if (entry.getKey().contains("A") || entry.getKey().contains("B")) {
-                    placeHolderA = entry.getValue();
-                    String key = entry.getKey().substring(0, entry.getKey().length() - 1);
-                    if (entry.getKey().contains("A")) {
-                        key = key + "B";
-                    } else {
-                        key = key + "A";
-                    }
-                    placeHolderB = map.get(key);
-                    int maxLength = Math.max(placeHolderA.size(), placeHolderB.size());
-                    for (int i = 0; i < maxLength; i++) {
-                        // Integer v1 = i < levels1.length ? Integer.parseInt(levels1[i]) : 0;
+                // if entry is an A or B or C entry
+                if (entry.getKey().contains("A") || entry.getKey().contains("B") || entry.getKey().contains("C")) {
+                    placeHolderOne = entry.getValue();
+                    String baseMaisNumber = entry.getKey().substring(0, entry.getKey().length() - 1);
+                    String key1 = "";
+                    String key2 = "";
 
-                        Integer versionA = i < placeHolderA.size() ? Integer.parseInt(placeHolderA.get(i)) : 0;
-                        Integer versionB = i < placeHolderB.size() ? Integer.parseInt(placeHolderB.get(i)) : 0;
-                        int meterReadSum = versionA + versionB;
+                    if (entry.getKey().contains("A")) {
+                        key1 = baseMaisNumber + "B";
+                        key2 = baseMaisNumber + "C";
+                    } else if (entry.getKey().contains("B")){
+                        key1 = baseMaisNumber + "A";
+                        key2 = baseMaisNumber + "C";
+                    } else if (entry.getKey().contains("C")){
+                        key1 = baseMaisNumber + "A";
+                        key2 = baseMaisNumber + "B";
+                    }
+
+                    placeHolderTwo = map.get(key1);
+                    placeHolderThree = map.get(key2);
+
+                    int maxLength;
+
+                    if (placeHolderThree != null) {
+                        maxLength = Math.max(Math.max(placeHolderOne.size(), placeHolderTwo.size()),placeHolderThree.size());
+                    } else{
+                        maxLength = Math.max(placeHolderOne.size(), placeHolderTwo.size());
+                    }
+
+                    for (int i = 0; i < maxLength; i++) {
+
+                        Integer versionOne = i < placeHolderOne.size() ? Integer.parseInt(placeHolderOne.get(i)) : 0;
+                        Integer versionTwo = i < placeHolderTwo.size() ? Integer.parseInt(placeHolderTwo.get(i)) : 0;
+                        Integer versionThree = 0;
+
+                        int meterReadSum = 0;
+
+                        if (placeHolderThree != null) {
+                            versionThree = i < placeHolderThree.size() ? Integer.parseInt(placeHolderThree.get(i)) : 0;
+                            meterReadSum = versionOne + versionTwo + versionThree;
+                        } else {
+                            meterReadSum = versionOne + versionTwo;
+                        }
+
                         arrToReturn.add(meterReadSum);
                         System.out.println("the current entry is: ");
                         System.out.println(entry.getKey());
@@ -136,7 +163,8 @@ public class ExcelWriter {
                     int keySize = entry.getKey().length();
 
                     theNewMap.put(entry.getKey().substring(0, keySize - 1), arrToReturn);
-                    removedKeys.add(key);
+                    removedKeys.add(key1);
+                    removedKeys.add(key2);
                 } else {
                     // if entry is not an A or B entry
                     // just add it to the new hashmap

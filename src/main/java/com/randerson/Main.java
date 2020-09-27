@@ -92,14 +92,20 @@ public class Main implements BackgroundFunction<PubsubMessage> {
             archiveYesterdaySheet = archiveWorkbook.getSheet(isoFormat.format(currentTimestamp.minusDays(1)));
         }
         XSSFSheet archiveTodaySheet = archiveWorkbook.getSheet(isoFormat.format(currentTimestamp));
+        System.out.println("Does it get here?");
+        System.out.println(archiveTodaySheet);
         if (archiveTodaySheet == null) {
+            System.out.println("listing of archive sheets");
+            for (int i = 0; i < archiveWorkbook.getNumberOfSheets(); i++) {
+                System.out.println(archiveWorkbook.getSheetAt(i).getSheetName());
+            }
             final int FIRST_SHEET = 0;
-            archiveTodaySheet = workbook.cloneSheet(FIRST_SHEET, isoFormat.format(currentTimestamp));
+            archiveTodaySheet = archiveWorkbook.cloneSheet(FIRST_SHEET, isoFormat.format(currentTimestamp));
         }
         writer.writeArrayBasedOnMeter(meterIdAndPulseReadings, archiveYesterdaySheet, archiveTodaySheet);
         String outputExcelPath = System.getProperty("java.io.tmpdir") + "/" + yearMonthFormat.format(currentTimestamp) + ".xlsx";
         System.out.println("the ARCHIVE output excel path is : " + outputExcelPath);
-        workbook.write(new FileOutputStream(outputExcelPath));
+        archiveWorkbook.write(new FileOutputStream(outputExcelPath));
         egnyteClient.uploadFile(outputExcelPath, true);
         ///// END OF ARCHIVE LOGIC
 
