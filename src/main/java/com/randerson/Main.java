@@ -105,6 +105,7 @@ public class Main implements BackgroundFunction<PubsubMessage> {
         writer.writeArrayBasedOnMeter(meterIdAndPulseReadings, archiveYesterdaySheet, archiveTodaySheet);
         String outputExcelPath = System.getProperty("java.io.tmpdir") + "/" + yearMonthFormat.format(currentTimestamp) + ".xlsx";
         System.out.println("the ARCHIVE output excel path is : " + outputExcelPath);
+        archiveWorkbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
         archiveWorkbook.write(new FileOutputStream(outputExcelPath));
         egnyteClient.uploadFile(outputExcelPath, true);
         ///// END OF ARCHIVE LOGIC
@@ -127,6 +128,7 @@ public class Main implements BackgroundFunction<PubsubMessage> {
         writer.writeArrayBasedOnMeter(meterIdAndPulseReadings, yesterdaySheet, todaySheet);
         outputExcelPath = System.getProperty("java.io.tmpdir") + "/MeterReadSpreadsheet.xlsx";
         System.out.println("the output excel path is : " + outputExcelPath);
+        workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
         workbook.write(new FileOutputStream(outputExcelPath));
         egnyteClient.uploadFile(outputExcelPath, false);
         System.out.println("Finished.");
