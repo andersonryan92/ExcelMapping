@@ -1,8 +1,6 @@
 package com.randerson;
 
 import org.apache.poi.xssf.usermodel.XSSFSheet;
-
-import java.text.DecimalFormat;
 import java.util.*;
 
 public class ExcelWriter {
@@ -14,10 +12,6 @@ public class ExcelWriter {
         public MaisAssociation(String locationName, int columnNumber) {
             this.locationName = locationName;
             this.columnNumber = columnNumber;
-        }
-
-        public String getLocationName() {
-            return locationName;
         }
 
         public int getColumnNumber() {
@@ -73,7 +67,7 @@ public class ExcelWriter {
                     String maisNumber = entry.getKey();
                     int number = entry.getValue().get(j);
                     try {
-                        workingSheet.getRow(rowNumber).getCell(this.maisColumns.get(maisNumber).getColumnNumber()).setCellFormula("B2*" + number);
+                        workingSheet.getRow(rowNumber).getCell(this.maisColumns.get(maisNumber).getColumnNumber()).setCellFormula("ROUND(B2*" + number + ", 1)");
                     } catch (NullPointerException npe) {
                         System.err.println("Failed to retrieve a cell for MAIS " + maisNumber);
                         throw npe;
